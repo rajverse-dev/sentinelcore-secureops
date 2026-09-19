@@ -1,0 +1,1 @@
+package com.sentinelcore.assetservice.dto; import java.time.LocalDateTime; import java.util.UUID; import com.sentinelcore.assetservice.entity.SecurityReviewStatus; public record SecurityReviewResponse(UUID id,String reviewer,String scope,String reviewPeriod,String findings,String anomalies,SecurityReviewStatus status,String comments,LocalDateTime reviewDate){}
