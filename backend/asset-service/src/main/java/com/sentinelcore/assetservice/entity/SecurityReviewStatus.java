@@ -1,0 +1,1 @@
+package com.sentinelcore.assetservice.entity; public enum SecurityReviewStatus { PENDING, IN_REVIEW, APPROVED, REJECTED, COMPLETED }

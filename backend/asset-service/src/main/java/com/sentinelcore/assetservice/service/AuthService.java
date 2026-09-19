@@ -41,6 +41,16 @@ public class AuthService {
             );
         }
 
+        String username = null;
+        if (request.getUsername() != null && !request.getUsername().trim().isEmpty()) {
+            username = request.getUsername().trim();
+            if (userRepository.existsByUsername(username)) {
+                throw new EmailAlreadyExistsExcepiton(
+                        "Username is already taken"
+                );
+            }
+        }
+
         String hashedPassword =
                 passwordEncoder.encode(
                         request.getPassword()
@@ -49,6 +59,7 @@ public class AuthService {
         User user = new User(
                 request.getName().trim(),
                 email,
+                username,
                 hashedPassword,
                 "USER",
                 true
@@ -56,24 +67,31 @@ public class AuthService {
 
         User savedUser = userRepository.save(user);
 
-        
+        String token = jwtService.generateToken(
+                savedUser.getEmail(),
+                savedUser.getRole()
+        );
 
         return new AuthResponse(
                 savedUser.getId(),
                 savedUser.getName(),
                 savedUser.getEmail(),
+                savedUser.getUsername(),
                 savedUser.getRole(),
-                null
+                token
         );
     }
 
     public AuthResponse login(LoginRequest request) {
 
-        String email = request.getEmail()
-                .trim()
-                .toLowerCase();
+        String identifier = request.getIdentifier().toLowerCase();
 
-        User user = userRepository.findByEmail(email)
+        if (identifier.isBlank()) {
+            throw new AuthenticationException("Email or username is required");
+        }
+
+        User user = userRepository.findByEmail(identifier)
+                .or(() -> userRepository.findByUsername(identifier))
                 .orElseThrow(() ->
                         new AuthenticationException(
                                 "Invalid email or password"
@@ -106,6 +124,7 @@ public class AuthService {
                 user.getId(),
                 user.getName(),
                 user.getEmail(),
+                user.getUsername(),
                 user.getRole(),
                 token
         );

@@ -1,0 +1,22 @@
+# Frontend dependencies and build
+Frontend/node_modules/
+Frontend/dist/
+Frontend/tsconfig.app.tsbuildinfo
+
+
+
+# Local IDE files
+.vscode/
+
+# Secrets
+.env
+.env.*
+!.env.example
+# TypeScript build metadata
+Frontend/*.tsbuildinfo
+
+# Maven generated files
+backend/asset-service/target/
+
+Frontend/vite.config.js
+Frontend/vite.config.d.ts
