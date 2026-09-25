@@ -96,19 +96,34 @@ export const incidentApi = {
 
 export const auditApi = {
   getLogs: (query?: string, page = 0, size = 25) => api.get(endpoints.audit, { params: { query, page, size } }),
-  getIntegrity: () => api.get(`${endpoints.audit}/integrity`)
+  search: (params?: Record<string, unknown>) => api.get(`${endpoints.audit}/search`, { params }),
+  getSummary: () => api.get(`${endpoints.audit}/summary`),
+  getIntegrity: () => api.get(`${endpoints.audit}/integrity`),
+  getByUser: (userId: string, page = 0, size = 25) => api.get(`${endpoints.audit}/users/${userId}`, { params: { page, size } }),
+  getByEntity: (entityType: string, entityId: string, page = 0, size = 25) =>
+    api.get(`${endpoints.audit}/entity/${entityType}/${entityId}`, { params: { page, size } })
 };
 
 export const complianceApi = {
   getFrameworks: () => api.get(`${endpoints.compliance}/frameworks`),
   getControls: (frameworkId?: string) => api.get(`${endpoints.compliance}/controls`, { params: { frameworkId } }),
+  getControl: (id: string) => api.get(`${endpoints.compliance}/controls/${id}`),
+  updateStatus: (id: string, status: string, owner?: string) =>
+    api.patch(`${endpoints.compliance}/controls/${id}/status`, { status, owner }),
+  getEvidence: (controlId: string) => api.get(`${endpoints.compliance}/controls/${controlId}/evidence`),
+  addEvidence: (controlId: string, payload: { evidenceType: string; description: string; reference?: string; status?: string }) =>
+    api.post(`${endpoints.compliance}/controls/${controlId}/evidence`, payload),
+  getGapAnalysis: (frameworkId: string) => api.get(`${endpoints.compliance}/frameworks/${frameworkId}/gap-analysis`),
   getSummary: (frameworkId: string) => api.get(`${endpoints.compliance}/summary/${frameworkId}`)
 };
 
 export const securityReviewApi = {
   getReviews: () => api.get(endpoints.securityReviews),
+  getReview: (id: string) => api.get(`${endpoints.securityReviews}/${id}`),
   createReview: (payload: Record<string, unknown>) => api.post(endpoints.securityReviews, payload),
-  updateReview: (id: string, payload: Record<string, unknown>) => api.put(`${endpoints.securityReviews}/${id}`, payload)
+  updateReview: (id: string, payload: Record<string, unknown>) => api.put(`${endpoints.securityReviews}/${id}`, payload),
+  approve: (id: string, comments?: string) => api.post(`${endpoints.securityReviews}/${id}/approve`, null, { params: { comments } }),
+  reject: (id: string, reason?: string) => api.post(`${endpoints.securityReviews}/${id}/reject`, null, { params: { reason } })
 };
 
 export const reportApi = {
@@ -117,8 +132,27 @@ export const reportApi = {
     api.get(`${endpoints.riskReports}/export`, {
       params: { format },
       responseType: 'blob'
-    })
+    }),
+  getAccessReport: (from?: string, to?: string) => api.get('/api/reports/access', { params: { from, to } }),
+  getSecurityReport: () => api.get('/api/reports/security'),
+  getComplianceReport: (frameworkId: string) => api.get(`/api/reports/compliance/${frameworkId}`),
+  exportComplianceCsv: (frameworkId: string) =>
+    api.get(`/api/reports/compliance/${frameworkId}/export`, { params: { format: 'csv' }, responseType: 'blob' }),
+  exportCompliancePdf: (frameworkId: string) =>
+    api.get(`/api/reports/compliance/${frameworkId}/export`, { params: { format: 'pdf' }, responseType: 'blob' }),
+  exportAccessPdf: (from?: string, to?: string) =>
+    api.get('/api/reports/access/export', { params: { from, to, format: 'pdf' }, responseType: 'blob' }),
+  exportSecurityPdf: () =>
+    api.get('/api/reports/security/export', { params: { format: 'pdf' }, responseType: 'blob' })
 };
+
+export const getSseStreamUrl = () => {
+  const token = storage.getToken();
+  const base = `${api.defaults.baseURL || ''}/api/events/stream`;
+  return token ? `${base}?token=${encodeURIComponent(token)}` : base;
+};
+
+
 
 export const monitoringApi = {
   getOverview: () => api.get(endpoints.monitoring)

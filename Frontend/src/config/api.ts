@@ -14,5 +14,7 @@ export const endpoints = {
   compliance: '/api/compliance',
   securityReviews: '/api/security-reviews',
   monitoring: '/api/monitoring',
-  scans: '/api/scans'
+  scans: '/api/scans',
+  users: '/api/users'
 };
+

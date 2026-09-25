@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Container,
@@ -18,63 +18,37 @@ import {
   Alert,
   AlertTitle,
   Avatar,
+  CircularProgress,
 } from '@mui/material';
 import PeopleIcon from '@mui/icons-material/People';
 import AddIcon from '@mui/icons-material/Add';
 import PageHeader from '../components/PageHeader';
 import { useTheme } from '../context/ThemeContext';
+import api from '../services/api';
 
 interface User {
   id: string;
   name: string;
   email: string;
-  role: 'Admin' | 'Analyst' | 'Viewer';
-  status: 'active' | 'inactive';
-  lastLogin: string;
-  joinDate: string;
+  username?: string;
+  role: string;
+  enabled: boolean;
+  createdAt?: string;
 }
+
 
 export default function UsersPage() {
   const { colors } = useTheme();
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const users: User[] = [
-    {
-      id: 'U001',
-      name: 'Operations Admin',
-      email: 'admin@sentinelcore.local',
-      role: 'Admin',
-      status: 'active',
-      lastLogin: '2026-09-01 09:15',
-      joinDate: '2026-01-15',
-    },
-    {
-      id: 'U002',
-      name: 'Security Analyst',
-      email: 'analyst@sentinelcore.local',
-      role: 'Analyst',
-      status: 'active',
-      lastLogin: '2026-09-01 14:42',
-      joinDate: '2026-02-20',
-    },
-    {
-      id: 'U003',
-      name: 'Monitoring Viewer',
-      email: 'viewer@sentinelcore.local',
-      role: 'Viewer',
-      status: 'active',
-      lastLogin: '2026-08-31 16:30',
-      joinDate: '2026-03-10',
-    },
-    {
-      id: 'U004',
-      name: 'Incident Response',
-      email: 'ir-team@sentinelcore.local',
-      role: 'Analyst',
-      status: 'inactive',
-      lastLogin: '2026-08-25 11:20',
-      joinDate: '2026-04-05',
-    },
-  ];
+  useEffect(() => {
+    api.get('/api/users')
+      .then((response) => setUsers(response.data as User[]))
+      .catch(() => setUsers([]))
+      .finally(() => setLoading(false));
+  }, []);
+
 
   const getInitials = (name: string) => {
     return name
@@ -86,24 +60,13 @@ export default function UsersPage() {
   };
 
   const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'Admin':
+    switch (role?.toUpperCase()) {
+      case 'ADMIN':
         return '#EF4444';
-      case 'Analyst':
+      case 'ANALYST':
         return '#7C3AED';
-      case 'Viewer':
+      case 'VIEWER':
         return '#22D3EE';
-      default:
-        return '#94A3B8';
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active':
-        return '#10B981';
-      case 'inactive':
-        return '#94A3B8';
       default:
         return '#94A3B8';
     }
@@ -130,7 +93,7 @@ export default function UsersPage() {
                     variant="h4"
                     sx={{ fontWeight: 700, color: '#7C3AED' }}
                   >
-                    4
+                    {loading ? <CircularProgress size={20} /> : users.length}
                   </Typography>
                 </CardContent>
               </Card>
@@ -145,7 +108,7 @@ export default function UsersPage() {
                     variant="h4"
                     sx={{ fontWeight: 700, color: '#10B981' }}
                   >
-                    3
+                    {loading ? <CircularProgress size={20} /> : users.filter(u => u.enabled).length}
                   </Typography>
                 </CardContent>
               </Card>
@@ -160,7 +123,7 @@ export default function UsersPage() {
                     variant="h4"
                     sx={{ fontWeight: 700, color: '#EF4444' }}
                   >
-                    1
+                    {loading ? <CircularProgress size={20} /> : users.filter(u => u.role?.toUpperCase() === 'ADMIN').length}
                   </Typography>
                 </CardContent>
               </Card>
@@ -175,12 +138,13 @@ export default function UsersPage() {
                     variant="h4"
                     sx={{ fontWeight: 700, color: '#7C3AED' }}
                   >
-                    2
+                    {loading ? <CircularProgress size={20} /> : users.filter(u => u.role?.toUpperCase() === 'ANALYST').length}
                   </Typography>
                 </CardContent>
               </Card>
             </Grid>
           </Grid>
+
 
           {/* Action Bar */}
           <Box sx={{ display: 'flex', gap: 2, justifyContent: 'space-between' }}>
@@ -226,14 +190,28 @@ export default function UsersPage() {
                       Status
                     </TableCell>
                     <TableCell sx={{ color: '#94A3B8', fontWeight: 600 }}>
-                      Last Login
+                      Username
                     </TableCell>
                     <TableCell sx={{ color: '#94A3B8', fontWeight: 600 }}>
-                      Joined
+                      Created At
                     </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
+                  {loading && (
+                    <TableRow>
+                      <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                        <CircularProgress size={24} />
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {!loading && users.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} align="center" sx={{ color: '#94A3B8', py: 4 }}>
+                        No users found.
+                      </TableCell>
+                    </TableRow>
+                  )}
                   {users.map((user) => (
                     <TableRow
                       key={user.id}
@@ -283,27 +261,26 @@ export default function UsersPage() {
                       </TableCell>
                       <TableCell>
                         <Chip
-                          label={
-                            user.status === 'active' ? 'Active' : 'Inactive'
-                          }
+                          label={user.enabled ? 'Active' : 'Inactive'}
                           size="small"
                           sx={{
-                            bgcolor: `${getStatusColor(user.status)}20`,
-                            color: getStatusColor(user.status),
+                            bgcolor: user.enabled ? '#10B98120' : '#94A3B820',
+                            color: user.enabled ? '#10B981' : '#94A3B8',
                             fontWeight: 600,
                             fontSize: '0.75rem',
                           }}
                         />
                       </TableCell>
-                      <TableCell sx={{ color: '#F8FAFC' }}>
-                        {user.lastLogin}
+                      <TableCell sx={{ color: '#94A3B8' }}>
+                        {user.username || '—'}
                       </TableCell>
                       <TableCell sx={{ color: '#94A3B8' }}>
-                        {user.joinDate}
+                        {user.createdAt || '—'}
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
+
               </Table>
             </TableContainer>
           </Card>

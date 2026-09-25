@@ -19,16 +19,12 @@ import PageHeader from '../components/PageHeader';
 import StatusChip from '../components/StatusChip';
 import OverallHealthIndicator from '../components/OverallHealthIndicator';
 import AssetHealthDistribution from '../components/AssetHealthDistribution';
-import { healthChecks, healthOverview } from '../data/mockData';
-import {
-  infrastructureHealthStats,
-  assetHealthDistribution,
-  quickSnapshotMetrics,
-} from '../data/dashboard';
 import { assetApi } from '../services/api';
 import { AssetRecord } from '../data/assets';
 
-type HealthStats = typeof infrastructureHealthStats;
+
+type CategoryStats = { total: number; healthy: number; warning: number; critical: number };
+type HealthStats = { servers: CategoryStats; cloud: CategoryStats; network: CategoryStats };
 
 const emptyHealthStats: HealthStats = {
   servers: { total: 0, healthy: 0, warning: 0, critical: 0 },
@@ -281,7 +277,13 @@ export default function InfrastructureHealthPage() {
         Health Check Summary
       </Typography>
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        {quickSnapshotMetrics.map((metric) => (
+        {[
+          { label: 'Total Assets', value: assets.length },
+          { label: 'Active Assets', value: assets.filter(a => a.status === 'ACTIVE').length },
+          { label: 'Low Risk', value: assets.filter(a => a.riskLevel === 'LOW').length },
+          { label: 'Medium Risk', value: assets.filter(a => a.riskLevel === 'MEDIUM').length },
+          { label: 'Critical Risk', value: assets.filter(a => a.riskLevel === 'CRITICAL').length },
+        ].map((metric) => (
           <Grid item xs={12} sm={6} md={4} lg={2.4} key={metric.label}>
             <Card sx={{ bgcolor: '#0B1020', textAlign: 'center' }}>
               <CardContent>
@@ -304,67 +306,84 @@ export default function InfrastructureHealthPage() {
         ))}
       </Grid>
 
-      {/* Health Checks Table */}
+      {/* Assets Table */}
       <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2, color: '#F8FAFC' }}>
-        Health Check Results
+        Asset Health Results
       </Typography>
       <TableContainer component={Card} sx={{ bgcolor: '#0B1020' }}>
         <Table>
           <TableHead>
             <TableRow sx={{ bgcolor: '#101827' }}>
               <TableCell sx={{ fontWeight: 700, color: '#94A3B8' }}>
-                Check Name
+                Asset Name
               </TableCell>
               <TableCell sx={{ fontWeight: 700, color: '#94A3B8' }}>
-                Target Asset
+                Identifier
               </TableCell>
               <TableCell sx={{ fontWeight: 700, color: '#94A3B8' }}>
-                Check Type
+                Type
               </TableCell>
               <TableCell sx={{ fontWeight: 700, color: '#94A3B8' }}>
                 Status
               </TableCell>
               <TableCell sx={{ fontWeight: 700, color: '#94A3B8' }}>
-                Response Time
+                Risk Level
               </TableCell>
               <TableCell sx={{ fontWeight: 700, color: '#94A3B8' }}>
-                Last Checked
+                Region
               </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {healthChecks.map((check) => (
-              <TableRow key={`${check.asset}-${check.checkType}`} hover>
-                <TableCell sx={{ color: '#F8FAFC', fontWeight: 500 }}>
-                  {check.checkType}
+            {assets.length === 0 && !loading && (
+              <TableRow>
+                <TableCell colSpan={6} align="center" sx={{ color: '#94A3B8', py: 4 }}>
+                  No assets found. Add assets to see health data.
                 </TableCell>
-                <TableCell sx={{ color: '#F8FAFC' }}>{check.asset}</TableCell>
+              </TableRow>
+            )}
+            {assets.map((asset) => (
+              <TableRow key={asset.id} hover>
+                <TableCell sx={{ color: '#F8FAFC', fontWeight: 500 }}>
+                  {asset.name}
+                </TableCell>
+                <TableCell sx={{ color: '#F8FAFC' }}>{asset.identifier}</TableCell>
                 <TableCell sx={{ color: '#94A3B8' }}>
-                  {check.checkType}
+                  {asset.type}
                 </TableCell>
                 <TableCell>
                   <StatusChip
-                    label={check.status}
+                    label={asset.status}
                     severity={
-                      check.status === 'Failed'
+                      asset.status === 'INACTIVE'
                         ? 'error'
-                        : check.status === 'Warning'
+                        : asset.status === 'DEPRECATED'
                         ? 'warning'
                         : 'success'
                     }
                   />
                 </TableCell>
-                <TableCell sx={{ color: '#F8FAFC' }}>
-                  {check.responseTime}
+                <TableCell>
+                  <StatusChip
+                    label={asset.riskLevel}
+                    severity={
+                      asset.riskLevel === 'CRITICAL'
+                        ? 'error'
+                        : asset.riskLevel === 'HIGH' || asset.riskLevel === 'MEDIUM'
+                        ? 'warning'
+                        : 'success'
+                    }
+                  />
                 </TableCell>
                 <TableCell sx={{ color: '#94A3B8' }}>
-                  {check.lastChecked}
+                  {asset.region}
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </TableContainer>
+
 
       {/* Health Notes */}
       <Card sx={{ mt: 4, bgcolor: '#0B1020' }}>
