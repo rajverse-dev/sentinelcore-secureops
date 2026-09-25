@@ -21,10 +21,13 @@ public class AssetService {
 
     private final AssetRepository assetRepository;
     private final UserRepository userRepository;
+    private final AuditService auditService;
 
-    public AssetService(AssetRepository assetRepository, UserRepository userRepository) {
+    public AssetService(AssetRepository assetRepository, UserRepository userRepository,
+                        AuditService auditService) {
         this.assetRepository = assetRepository;
         this.userRepository = userRepository;
+        this.auditService = auditService;
     }
 
     // CREATE ASSET
@@ -61,8 +64,13 @@ public class AssetService {
                         : RiskLevel.LOW
         );
 
-        return assetRepository.save(asset);
+        Asset saved = assetRepository.save(asset);
+        auditService.record(owner, "ASSET_CREATED", "ASSET", saved.getId(),
+                "SUCCESS", "LOW", "Asset created: " + saved.getName(),
+                null, saved.getIdentifier(), "ASSET", "ASSET_CREATED", null, null);
+        return saved;
     }
+
 
     // GET ALL ASSETS
     public List<Asset> getAllAssets() {
@@ -110,16 +118,23 @@ public class AssetService {
             asset.setRiskLevel(request.getRiskLevel());
         }
 
-        return assetRepository.save(asset);
+        Asset saved = assetRepository.save(asset);
+        auditService.record(currentUser(), "ASSET_UPDATED", "ASSET", saved.getId(),
+                "SUCCESS", "LOW", "Asset updated: " + saved.getName(),
+                null, saved.getIdentifier(), "ASSET", "ASSET_UPDATED", null, null);
+        return saved;
     }
 
     // DELETE ASSET
     public void deleteAsset(UUID id) {
-
         Asset asset = getAssetById(id);
-
+        User user = currentUser();
+        auditService.record(user, "ASSET_DELETED", "ASSET", id,
+                "SUCCESS", "MEDIUM", "Asset deleted: " + asset.getName(),
+                asset.getIdentifier(), null, "ASSET", "ASSET_DELETED", null, null);
         assetRepository.delete(asset);
     }
+
 
     // SEARCH ASSETS
     public List<Asset> searchAssets(String name) {

@@ -1,1 +1,7 @@
-package com.sentinelcore.assetservice.repository; import java.util.*; import org.springframework.data.jpa.repository.JpaRepository; import com.sentinelcore.assetservice.entity.ComplianceEvidence; public interface ComplianceEvidenceRepository extends JpaRepository<ComplianceEvidence,UUID>{List<ComplianceEvidence> findByControlId(UUID controlId);}
+package com.sentinelcore.assetservice.repository;
+import java.util.*; import org.springframework.data.jpa.repository.JpaRepository;
+import com.sentinelcore.assetservice.entity.ComplianceEvidence;
+public interface ComplianceEvidenceRepository extends JpaRepository<ComplianceEvidence, UUID> {
+    List<ComplianceEvidence> findByControlId(UUID controlId);
+    long countByControlId(UUID controlId);
+}

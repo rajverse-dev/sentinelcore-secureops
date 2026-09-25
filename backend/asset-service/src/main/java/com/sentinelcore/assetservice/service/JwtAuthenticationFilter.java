@@ -1,6 +1,7 @@
 package com.sentinelcore.assetservice.service;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -19,54 +20,52 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     public JwtAuthenticationFilter(JwtService jwtService) {
         this.jwtService = jwtService;
-        }
+    }
 
-        @Override
+    @Override
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
             FilterChain filterChain)
             throws ServletException, IOException {
 
-        String authHeader =
-                request.getHeader("Authorization");
+        String authHeader = request.getHeader("Authorization");
+        String token = null;
 
-        if (authHeader == null ||
-                !authHeader.startsWith("Bearer ")) {
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            token = authHeader.substring(7);
+        } else if (request.getParameter("token") != null && !request.getParameter("token").isBlank()) {
+            token = request.getParameter("token").trim();
+        }
 
+        if (token == null) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        String token =
-                authHeader.substring(7);
-
         try {
-
             if (jwtService.isTokenValid(token)) {
-
-                String email =
-                        jwtService.extractEmail(token);
+                String email = jwtService.extractEmail(token);
+                String role = jwtService.extractRole(token);
+                List<SimpleGrantedAuthority> authorities = role != null && !role.isBlank()
+                        ? List.of(new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()))
+                        : List.of();
 
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(
                                 email,
                                 null,
-                                List.of()
+                                authorities
                         );
 
                 SecurityContextHolder
                         .getContext()
                         .setAuthentication(authentication);
             }
-
         } catch (Exception ignored) {
-            // Invalid token.
-            // Spring Security will reject protected requests.
+            // Invalid token
         }
 
         filterChain.doFilter(request, response);
     }
-} 
-
-
+}

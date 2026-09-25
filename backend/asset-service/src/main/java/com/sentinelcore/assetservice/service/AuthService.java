@@ -12,21 +12,29 @@ import com.sentinelcore.assetservice.entity.User;
 import com.sentinelcore.assetservice.exception.EmailAlreadyExistsExcepiton;
 import com.sentinelcore.assetservice.repository.UserRepository;
 
+
 @Service
 public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final AuditService auditService;
+
+    private final KafkaProducerService kafkaProducerService;
 
     public AuthService(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
-            JwtService jwtService) {
+            JwtService jwtService,
+            AuditService auditService,
+            KafkaProducerService kafkaProducerService) {
 
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.auditService = auditService;
+        this.kafkaProducerService = kafkaProducerService;
     }
 
     public AuthResponse register(RegisterRequest request) {
@@ -67,6 +75,13 @@ public class AuthService {
 
         User savedUser = userRepository.save(user);
 
+        if (kafkaProducerService != null) {
+            kafkaProducerService.publishAuditEvent(savedUser, "REGISTER", "USER", savedUser.getId(),
+                    "SUCCESS", "LOW", "User registered successfully",
+                    null, savedUser.getRole(),
+                    "AUTH", "USER_REGISTERED", null, null);
+        }
+
         String token = jwtService.generateToken(
                 savedUser.getEmail(),
                 savedUser.getRole()
@@ -82,6 +97,7 @@ public class AuthService {
         );
     }
 
+
     public AuthResponse login(LoginRequest request) {
 
         String identifier = request.getIdentifier().toLowerCase();
@@ -92,15 +108,24 @@ public class AuthService {
 
         User user = userRepository.findByEmail(identifier)
                 .or(() -> userRepository.findByUsername(identifier))
-                .orElseThrow(() ->
-                        new AuthenticationException(
-                                "Invalid email or password"
-                        ));
+                .orElse(null);
+
+        if (user == null) {
+            if (kafkaProducerService != null) {
+                kafkaProducerService.publishAuditEvent(null, "LOGIN", "USER", null,
+                        "FAILURE", "HIGH", "Login failed: User not found (" + identifier + ")",
+                        null, null, "AUTH", "LOGIN_FAILURE", null, null);
+            }
+            throw new AuthenticationException("Invalid email or password");
+        }
 
         if (!user.isEnabled()) {
-            throw new AuthenticationException(
-                    "User account is disabled"
-            );
+            if (kafkaProducerService != null) {
+                kafkaProducerService.publishAuditEvent(user, "LOGIN", "USER", user.getId(),
+                        "FAILURE", "HIGH", "Login failed: Account disabled",
+                        null, null, "AUTH", "LOGIN_FAILURE", null, null);
+            }
+            throw new AuthenticationException("User account is disabled");
         }
 
         boolean passwordMatches =
@@ -110,15 +135,25 @@ public class AuthService {
                 );
 
         if (!passwordMatches) {
-            throw new AuthenticationException(
-                    "Invalid email or password"
-            );
+            if (kafkaProducerService != null) {
+                kafkaProducerService.publishAuditEvent(user, "LOGIN", "USER", user.getId(),
+                        "FAILURE", "HIGH", "Login failed: Invalid password",
+                        null, null, "AUTH", "LOGIN_FAILURE", null, null);
+            }
+            throw new AuthenticationException("Invalid email or password");
         }
 
         String token = jwtService.generateToken(
                 user.getEmail(),
                 user.getRole()
         );
+
+        if (kafkaProducerService != null) {
+            kafkaProducerService.publishAuditEvent(user, "LOGIN", "USER", user.getId(),
+                    "SUCCESS", "LOW", "User logged in successfully",
+                    null, null, "AUTH", "LOGIN_SUCCESS", null, null);
+        }
+
 
         return new AuthResponse(
                 user.getId(),
@@ -129,4 +164,4 @@ public class AuthService {
                 token
         );
     }
-}
+}

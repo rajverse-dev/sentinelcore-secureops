@@ -12,8 +12,12 @@ import org.springframework.http.HttpStatus;
 import com.sentinelcore.assetservice.service.JwtAuthenticationFilter;
 
 
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+
 @Configuration
+@EnableMethodSecurity
 public class SecurityConfig {
+
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
@@ -43,7 +47,8 @@ public SecurityFilterChain securityFilterChain(
 
             .requestMatchers(
                 "/api/auth/**",
-                "/api/test"
+                "/api/test",
+                "/api/events/**"
             ).permitAll()
 
             .anyRequest().authenticated()
