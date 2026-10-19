@@ -1,22 +1,37 @@
-# Frontend dependencies and build
+# Dependencies & Build artifacts
 Frontend/node_modules/
 Frontend/dist/
 Frontend/tsconfig.app.tsbuildinfo
+Frontend/tsconfig.node.tsbuildinfo
+Frontend/*.tsbuildinfo
+Frontend/vite.config.js
+Frontend/vite.config.d.ts
 
+# Maven generated files
+**/target/
+backend/asset-service/target/
 
-
-# Local IDE files
+# Local IDE & OS files
 .vscode/
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
 
-# Secrets
+# Secrets & Environment variables
 .env
 .env.*
 !.env.example
-# TypeScript build metadata
-Frontend/*.tsbuildinfo
+Frontend/.env
+Frontend/.env.*
+!Frontend/.env.example
 
-# Maven generated files
-backend/asset-service/target/
+# Vercel local project metadata
+.vercel/
+**/.vercel/
 
-Frontend/vite.config.js
-Frontend/vite.config.d.ts
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

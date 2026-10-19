@@ -41,14 +41,16 @@ public class AuthService {
             );
         }
 
-        String username = null;
-        if (request.getUsername() != null && !request.getUsername().trim().isEmpty()) {
-            username = request.getUsername().trim();
+        String username = request.getUsername();
+        if (username != null && !username.isBlank()) {
+            username = username.trim().toLowerCase();
             if (userRepository.existsByUsername(username)) {
                 throw new EmailAlreadyExistsExcepiton(
                         "Username is already taken"
                 );
             }
+        } else {
+            username = null;
         }
 
         String hashedPassword =
