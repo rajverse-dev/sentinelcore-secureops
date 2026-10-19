@@ -1,0 +1,1 @@
+package com.sentinelcore.assetservice.repository; import java.util.*; import org.springframework.data.jpa.repository.JpaRepository; import com.sentinelcore.assetservice.entity.*; public interface ComplianceControlRepository extends JpaRepository<ComplianceControl,UUID>{List<ComplianceControl> findByFrameworkId(UUID frameworkId);}

@@ -1,0 +1,1 @@
+package com.sentinelcore.assetservice.dto; import java.util.UUID; public record ComplianceSummaryResponse(UUID frameworkId,String frameworkName,long controls,long compliant,long partial,long nonCompliant,long notAssessed,double percentage){}
