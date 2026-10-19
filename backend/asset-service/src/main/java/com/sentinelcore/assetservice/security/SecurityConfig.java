@@ -8,6 +8,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;    
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import com.sentinelcore.assetservice.service.JwtAuthenticationFilter;
 
 
@@ -39,13 +41,16 @@ public SecurityFilterChain securityFilterChain(
         )
 
         .authorizeHttpRequests(auth -> auth
-
-            .requestMatchers(
-                "/api/auth/**",
-                "/api/test"
-            ).permitAll()
+            .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+            .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/register").permitAll()
 
             .anyRequest().authenticated()
+        )
+
+        .exceptionHandling(exception -> exception
+            .authenticationEntryPoint((request, response, authException) ->
+                response.sendError(HttpStatus.UNAUTHORIZED.value(), "Unauthorized")
+            )
         )
 
         .addFilterBefore(

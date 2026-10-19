@@ -15,6 +15,9 @@ public class RegisterRequest {
     @Email(message = "Enter a valid email address")
     private String email;
 
+    @Size(max = 50, message = "Username must not exceed 50 characters")
+    private String username;
+
     @NotBlank(message = "Password is required")
     @Size(min = 8, max = 100,
             message = "Password must be at least 8 characters")
@@ -37,6 +40,14 @@ public class RegisterRequest {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public String getPassword() {
