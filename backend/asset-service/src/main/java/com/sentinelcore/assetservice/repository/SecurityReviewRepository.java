@@ -1,0 +1,1 @@
+package com.sentinelcore.assetservice.repository; import java.util.*; import org.springframework.data.jpa.repository.JpaRepository; import com.sentinelcore.assetservice.entity.SecurityReview; public interface SecurityReviewRepository extends JpaRepository<SecurityReview,UUID>{List<SecurityReview> findAllByOrderByReviewDateDesc();}
